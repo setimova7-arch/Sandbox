@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta name="google-site-verification" content="SYXHaBC_9kfNsOaVZCOgDyGafGidlhsKYXsRYplZg2M" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1018">
+<title>Particle Playground — 2D Sandbox</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0b1018;
+  --panel: #141d29;
+  --panel2: #1c2939;
+  --line: #304158;
+  --text: #eef5ff;
+  --muted: #9bacc2;
+  --accent: #76e2ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top,#17283a 0,#0b1018 55%);
+  color: var(--text);
+  font: 14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;
+  min-height: 100vh;
+}
+.app { max-width: 1250px; margin: auto; padding: 14px; }
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.brand { font-weight: 900; letter-spacing: .07em; font-size: 20px; }
+.brand span { color: var(--accent); }
+.sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.actions { display: flex; gap: 7px; flex-wrap: wrap; }
+button,select,input { font: inherit; }
+button {
+  color: var(--text);
+  background: linear-gradient(180deg,#26364a,#1a2737);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  min-height: 40px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 245px;
+  gap: 13px;
+  align-items: start;
+}
+.stage { min-width: 0; }
+.canvasbox {
+  position: relative;
+  border: 1px solid #314359;
+  border-radius: 15px;
+  overflow: hidden;
+  background: #080d14;
+  touch-action: none;
+}
+.canvasbox canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.38;
+  touch-action: none;
+}
+.overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+.pill {
+  font-size: 11px;
+  color: #e3efff;
+  background: #0a121ddd;
+  border: 1px solid #ffffff20;
+  border-radius: 99px;
+  padding: 6px 9px;
+}
+.palette {
+  display: grid;
+  grid-template-columns: repeat(6,minmax(0,1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+.material {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 68px;
+  padding: 7px 2px;
+  font-size: 11px;
+  background: #131e2b;
+  border: 1px solid #2d3b4e;
+}
+.material .icon { font-size: 22px; line-height: 1; }
+.material.active {
+  border-color: var(--accent);
+  background: #173444;
+}
+.side {
+  background: linear-gradient(180deg,#172230,#111a26);
+  border: 1px solid #2b3a4e;
+  border-radius: 14px;
+  padding: 14px;
+}
+.section {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  color: var(--muted);
+  margin: 3px 0 12px;
+}
+.control { margin: 13px 0; }
+.control label {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+  color: #d6e2f2;
+  margin-bottom: 7px;
+}
+.control output { color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+select {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--panel2);
+}
+.legend {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 12px;
+  color: #d0d9e7;
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.hint {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.toast { font-size: 12px; color: var(--accent); min-height: 20px; padding: 8px 2px; }
+.meter {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 8px;
+}
+.smallbtn { width: 100%; margin-top: 10px; }
+.mobile-note { display: none; }
+
+@media(max-width:780px) {
+  .app { padding: 9px; }
+  .layout { grid-template-columns: 1fr; }
+  .side { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .side .section,.side .hint,.side .smallbtn,.meter { grid-column: 1/-1; }
+  .control { margin: 8px 0; }
+  .palette { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+  .material { min-height: 60px; font-size: 10px; }
+  .canvasbox canvas { aspect-ratio: 1/1.05; }
+  .brand { font-size: 17px; }
+  .actions button { padding: 7px 9px; font-size: 12px; min-height: 36px; }
+  .mobile-note { display: block; color: var(--muted); font-size: 11px; margin: 7px 2px; }
+}
+@media(max-width:380px) {
+  .palette { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .side { grid-template-columns: 1fr; }
+  .side .section,.side .hint,.side .smallbtn,.meter { grid-column: auto; }
+}
+</style>
+</head>
+<body>
+<main class="app" id="app">
+<header class="top">
+  <div>
+    <div class="brand">PARTICLE <span>PLAYGROUND</span></div>
+    <div class="sub">2D песочная лаборатория · экспериментируй с материалами</div>
+  </div>
+  <div class="actions">
+    <button id="pause">Ⅱ Пауза</button>
+    <button id="step">⏭ Шаг</button>
+    <button id="reset">↻ Новый мир</button>
+    <button id="clear">Очистить</button>
+  </div>
+</header>
+
+<div class="layout">
+<section class="stage">
+  <div class="canvasbox">
+    <canvas id="field" aria-label="Поле симуляции частиц"></canvas>
+    <div class="overlay">
+      <span class="pill" id="status">● Симуляция работает</span>
+      <span class="pill">Кисть: <b id="brushLabel">Песок</b></span>
+    </div>
+  </div>
+
+  <div class="mobile-note">Веди пальцем по полю, чтобы рисовать.</div>
+
+  <div class="palette" id="palette">
+    <button class="material active" data-kind="sand"><span class="icon">🟨</span>Песок</button>
+    <button class="material" data-kind="water"><span class="icon">💧</span>Вода</button>
+    <button class="material" data-kind="wall"><span class="icon">🧱</span>Стена</button>
+    <button class="material" data-kind="fire"><span class="icon">🔥</span>Огонь</button>
+    <button class="material" data-kind="wood"><span class="icon">🪵</span>Дерево</button>
+    <button class="material" data-kind="stone"><span class="icon">⬛</span>Камень</button>
+    <button class="material" data-kind="oil"><span class="icon">🟣</span>Масло</button>
+    <button class="material" data-kind="steam"><span class="icon">♨️</span>Пар</button>
+    <button class="material" data-kind="ice"><span class="icon">🧊</span>Лёд</button>
+    <button class="material" data-kind="plant"><span class="icon">🌱</span>Растение</button>
+    <button class="material" data-kind="eraser"><span class="icon">🧽</span>Ластик</button>
+    <button class="material" data-kind="heat"><span class="icon">🌡️</span>Нагрев</button>
+  </div>
+
+  <div class="toast" id="toast">Выбери материал и рисуй на поле.</div>
+  <div class="meter">
+    <span id="particles">Частиц: 0</span>
+    <span id="fps">FPS: —</span>
+  </div>
+</section>
+
+<aside class="side">
+  <div class="section">Настройки эксперимента</div>
+
+  <div class="control">
+    <label for="brush">Размер кисти <output id="brushOut">7</output></label>
+    <input id="brush" type="range" min="1" max="18" value="7">
+  </div>
+
+  <div class="control">
+    <label for="gravity">Гравитация <output id="gravityOut">100%</output></label>
+    <input id="gravity" type="range" min="0" max="180" value="100">
+  </div>
+
+  <div class="control">
+    <label for="temp">Температура кисти <output id="tempOut">+20°</output></label>
+    <input id="temp" type="range" min="-30" max="220" value="20">
+  </div>
+
+  <div class="control">
+    <label for="wind">Ветер <output id="windOut">0</output></label>
+    <input id="wind" type="range" min="-10" max="10" value="0">
+  </div>
+
+  <div class="control">
+    <label for="speed">Скорость <output id="speedOut">1×</output></label>
+    <input id="speed" type="range" min="1" max="4" value="1">
+  </div>
+
+  <div class="control">
+    <label for="worldtemp">Температура среды</label>
+    <select id="worldtemp">
+      <option value="20">Комнатная</option>
+      <option value="90">Жарко</option>
+      <option value="150">Очень жарко</option>
+      <option value="-10">Мороз</option>
+    </select>
+  </div>
+
+  <div class="section">Поведение материалов</div>
+  <div class="legend">🟨 Песок падает и сыплется</div>
+  <div class="legend">💧 Вода течёт и охлаждает</div>
+  <div class="legend">🔥 Огонь нагревает дерево</div>
+  <div class="legend">🧊 Лёд тает, пар остывает</div>
+
+  <p class="hint">
+    Образование пара от огня и воды снижено.
+    Это игровая модель, а не точная инженерная симуляция.
+  </p>
+
+  <button class="smallbtn" id="demo">▶ Пример: костёр и вода</button>
+</aside>
+</div>
+</main>
+
+<script>
+(()=>{
+'use strict';
+
+const root=document.getElementById('app');
+const canvas=document.getElementById('field');
+const ctx=canvas.getContext('2d',{alpha:false});
+const $=id=>root.querySelector('#'+id);
+
+const C={
+  empty:0,sand:1,water:2,wall:3,fire:4,
+  wood:5,stone:6,oil:7,steam:8,ice:9,plant:10
+};
+
+const colors={
+  sand:['#efd06c','#cfa746'],
+  water:['#2999e8','#6bcaff'],
+  wall:['#687c95','#40536a'],
+  fire:['#ff4b28','#ffc04c'],
+  wood:['#a96a3c','#704126'],
+  stone:['#8795a8','#4d5b6c'],
+  oil:['#7647bd','#b66ee0'],
+  steam:['#dce8f1','#90a6ba'],
+  ice:['#b3f0ff','#5dbbd7'],
+  plant:['#55bd70','#247b43']
+};
+
+let gw=180,gh=130,cell=4,grid,heat;
+let paused=false,kind='sand',frame=0,seed=7;
+let lastFpsTime=0,fpsFrames=0;
+
+function rand(){
+  seed=(seed*1664525+1013904223)>>>0;
+  return seed/4294967296;
+}
+
+function idx(x,y){return y*gw+x}
+function inside(x,y){return x>=0&&x<gw&&y>=0&&y<gh}
+function get(x,y){return inside(x,y)?grid[idx(x,y)]:C.wall}
+
+function set(x,y,k,temp){
+  if(!inside(x,y))return;
+  let i=idx(x,y);
+  grid[i]=k;
+  if(k===C.fire)heat[i]=temp||145;
+  else if(k===C.ice)heat[i]=-10;
+  else if(k===C.water)heat[i]=+$('worldtemp').value;
+  else if(k===C.steam)heat[i]=temp||75;
+  else if(k===C.wood)heat[i]=20;
+}
+
+function name(k){
+  return Object.keys(C).find(a=>C[a]===k)||'empty';
+}
+
+function resize(){
+  let r=canvas.getBoundingClientRect();
+  let w=Math.max(250,r.width);
+  let h=Math.max(220,r.height);
+  let dpr=Math.min(1.5,window.devicePixelRatio||1);
+
+  canvas.width=Math.round(w*dpr);
+  canvas.height=Math.round(h*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  let old=grid,oldH=heat,ow=gw,oh=gh;
+  gw=Math.max(75,Math.min(230,Math.floor(190*w/h)));
+  gh=Math.max(80,Math.min(210,Math.floor(gw*h/w)));
+  cell=w/gw;
+
+  grid=new Uint8Array(gw*gh);
+  heat=new Float32Array(gw*gh);
+
+  if(old){
+    for(let y=0;y<Math.min(oh,gh);y++)
+      for(let x=0;x<Math.min(ow,gw);x++){
+        grid[idx(x,y)]=old[y*ow+x];
+        heat[idx(x,y)]=oldH[y*ow+x];
+      }
+  }
+  draw();
+}
+
+function paintAt(px,py){
+  let x=Math.floor(px/cell);
+  let y=Math.floor(py/cell);
+  let r=+$('brush').value;
+
+  for(let oy=-r;oy<=r;oy++){
+    for(let ox=-r;ox<=r;ox++){
+      if(ox*ox+oy*oy>r*r)continue;
+
+      let xx=x+ox,yy=y+oy;
+      if(!inside(xx,yy))continue;
+
+      let i=idx(xx,yy),at=grid[i];
+
+      if(kind==='eraser'){
+        grid[i]=0;
+        heat[i]=0;
+        continue;
+      }
+
+      if(kind==='heat'){
+        heat[i]=Math.max(-30,Math.min(300,
+          heat[i]+Math.max(8,+$('temp').value)
+        ));
+
+        if(at===C.ice&&heat[i]>0)grid[i]=C.water;
+        if(at===C.wood&&heat[i]>95)grid[i]=C.fire;
+        continue;
+      }
+
+      if(kind==='fire'){
+        if(at===C.empty)set(xx,yy,C.fire,155);
+        continue;
+      }
+
+      if(['wall','wood','stone','ice','plant'].includes(kind)){
+        if(at===C.empty||at===C.water||at===C.steam)
+          set(xx,yy,C[kind]);
+        continue;
+      }
+
+      if(['sand','water','oil','steam'].includes(kind)){
+        if(at===C.empty||at===C.fire||at===C.steam)
+          set(xx,yy,C[kind]);
+      }
+    }
+  }
+}
+
+function swap(x,y,nx,ny){
+  if(!inside(nx,ny))return false;
+
+  let a=idx(x,y),b=idx(nx,ny);
+  let t=grid[b];
+  grid[b]=grid[a];
+  grid[a]=t;
+
+  let h=heat[b];
+  heat[b]=heat[a];
+  heat[a]=h;
+
+  return true;
+}
+
+function liquidMove(x,y,dirs){
+  for(let dx of dirs){
+    if(get(x+dx,y)===C.empty&&rand()<.78)
+      return swap(x,y,x+dx,y);
+  }
+  return false;
+}
+
+function update(){
+  let gravity=+$('gravity').value/100;
+  let wind=+$('wind').value;
+  let env=+$('worldtemp').value;
+  let left=rand()<.5;
+
+  for(let y=gh-2;y>=0;y--){
+    let start=left?0:gw-1;
+    let end=left?gw:-1;
+    let step=left?1:-1;
+
+    for(let x=start;x!==end;x+=step){
+      let i=idx(x,y),k=grid[i];
+
+      if(k===C.empty||k===C.wall||k===C.stone)continue;
+
+      heat[i]+=(env-heat[i])*.0008;
+
+      if(k===C.sand){
+        if(rand()<gravity&&get(x,y+1)===C.empty){
+          swap(x,y,x,y+1);
+          continue;
+        }
+
+        let d=rand()<.5?-1:1;
+
+        if(rand()<gravity&&get(x+d,y+1)===C.empty){
+          swap(x,y,x+d,y+1);
+          continue;
+        }
+
+        if(rand()<gravity&&get(x-d,y+1)===C.empty)
+          swap(x,y,x-d,y+1);
+        else if(get(x,y+1)===C.water&&rand()<.5)
+          swap(x,y,x,y+1);
+      }
+
+      else if(k===C.water||k===C.oil){
+        // Небольшая вероятность испарения воды.
+        if(k===C.water&&heat[i]>112&&rand()<.0018){
+          grid[i]=C.steam;
+          heat[i]=90;
+          continue;
+        }
+
+        if(k===C.oil&&heat[i]>85&&rand()<.012){
+          grid[i]=C.fire;
+          heat[i]=155;
+          continue;
+        }
+
+        if(get(x,y+1)===C.empty&&rand()<gravity){
+          swap(x,y,x,y+1);
+          continue;
+        }
+
+        if(k===C.water&&get(x,y+1)===C.oil){
+          swap(x,y,x,y+1);
+          continue;
+        }
+
+        let dirs=wind>0?[-1,1]:
+                 wind<0?[1,-1]:
+                 (rand()<.5?[-1,1]:[1,-1]);
+
+        if(liquidMove(x,y,dirs))continue;
+
+        if(rand()<.025&&y>0&&get(x,y-1)===C.empty)
+          swap(x,y,x,y-1);
+      }
+
+      else if(k===C.fire){
+        heat[i]=Math.max(22,heat[i]-2.2);
+
+        if(rand()<.025){
+          grid[i]=C.empty;
+          heat[i]=0;
+          continue;
+        }
+
+        for(let [dx,dy] of [[0,-1],[1,0],[-1,0],[0,1]]){
+          let nx=x+dx,ny=y+dy;
+          if(!inside(nx,ny))continue;
+
+          let ni=idx(nx,ny),nk=grid[ni];
+
+          if(nk===C.wood&&rand()<.055){
+            grid[ni]=C.fire;
+            heat[ni]=150;
+          }
+          else if(nk===C.plant&&rand()<.12){
+            grid[ni]=C.fire;
+            heat[ni]=130;
+          }
+          else if(nk===C.water&&rand()<.0015){
+            grid[ni]=C.steam;
+            heat[ni]=75;
+          }
+        }
+
+        if(rand()<.045){
+          let nx=x+(rand()<.5?-1:1),ny=y-1;
+
+          if(inside(nx,ny)&&grid[idx(nx,ny)]===C.empty)
+            swap(x,y,nx,ny);
+          else if(y>0&&get(x,y-1)===C.empty)
+            swap(x,y,x,y-1);
+        }
+      }
+
+      else if(k===C.steam){
+        heat[i]-=.75;
+
+        if(heat[i]<28&&rand()<.025){
+          grid[i]=C.water;
+          heat[i]=env;
+          continue;
+        }
+
+        let nx=x+(rand()<.5?-1:1);
+
+        if(y>0&&get(x,y-1)===C.empty)
+          swap(x,y,x,y-1);
+        else if(get(nx,y)===C.empty)
+          swap(x,y,nx,y);
+
+        if(rand()<.004){
+          grid[i]=C.empty;
+          heat[i]=0;
+        }
+      }
+
+      else if(k===C.ice){
+        if(heat[i]>2){
+          grid[i]=C.water;
+          heat[i]=env;
+          continue;
+        }
+
+        if(env>5&&rand()<.0003)
+          grid[i]=C.water;
+      }
+
+      else if(k===C.wood){
+        if(heat[i]>100&&rand()<.003){
+          grid[i]=C.fire;
+          heat[i]=150;
+        }
+      }
+
+      else if(k===C.plant){
+        if(heat[i]>80)grid[i]=C.fire;
+        else if(get(x,y+1)===C.water&&rand()<.0005&&get(x,y-1)===C.empty)
+          grid[idx(x,y-1)]=C.plant;
+      }
+    }
+  }
+
+  frame++;
+}
+
+function draw(){
+  if(!grid)return;
+
+  let w=canvas.clientWidth;
+  let h=canvas.clientHeight;
+
+  ctx.fillStyle='#080d14';
+  ctx.fillRect(0,0,w,h);
+
+  ctx.strokeStyle='#ffffff08';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+
+  for(let x=0;x<w;x+=cell*10){
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,h);
+  }
+
+  for(let y=0;y<h;y+=cell*10){
+    ctx.moveTo(0,y);
+    ctx.lineTo(w,y);
+  }
+
+  ctx.stroke();
+
+  let count=0;
+
+  for(let y=0;y<gh;y++){
+    for(let x=0;x<gw;x++){
+      let i=idx(x,y),k=grid[i];
+      if(!k)continue;
+
+      count++;
+
+      let px=x*cell,py=y*cell;
+
+      if(k===C.fire){
+        ctx.fillStyle=rand()<.55?'#ff532e':'#ffb33e';
+        ctx.fillRect(px,py,Math.ceil(cell),Math.ceil(cell));
+
+        if(cell>=3&&rand()<.018){
+          ctx.fillStyle='#ffe98555';
+          ctx.fillRect(px-cell,py-cell,cell*3,cell*3);
+        }
+      }
+      else{
+        let c=colors[name(k)]||['#fff','#ddd'];
+
+        ctx.globalAlpha=k===C.steam?.62:1;
+        ctx.fillStyle=((x+y+frame)%5===0)?c[1]:c[0];
+        ctx.fillRect(px,py,Math.ceil(cell)+.15,Math.ceil(cell)+.15);
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+
+  ctx.strokeStyle='#61748b';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(0,h-1);
+  ctx.lineTo(w,h-1);
+  ctx.stroke();
+
+  $('particles').textContent='Частиц: '+count;
+}
+
+let last=0,acc=0;
+
+function loop(t){
+  if(!last)last=t;
+
+  let dt=Math.min((t-last)/1000,.05);
+  last=t;
+
+  if(!paused){
+    acc+=dt*+$('speed').value;
+    let n=0;
+
+    while(acc>=1/30&&n<5){
+      update();
+      acc-=1/30;
+      n++;
+    }
+  }
+
+  draw();
+
+  fpsFrames++;
+
+  if(t-lastFpsTime>1000){
+    $('fps').textContent='FPS: '+fpsFrames;
+    fpsFrames=0;
+    lastFpsTime=t;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+function point(e){
+  let r=canvas.getBoundingClientRect();
+  return{x:e.clientX-r.left,y:e.clientY-r.top};
+}
+
+let drawing=false,lastPaint=0;
+
+canvas.addEventListener('pointerdown',e=>{
+  drawing=true;
+  canvas.setPointerCapture(e.pointerId);
+  let p=point(e);
+  paintAt(p.x,p.y);
+  lastPaint=performance.now();
+});
+
+canvas.addEventListener('pointermove',e=>{
+  if(!drawing)return;
+
+  let p=point(e),now=performance.now();
+
+  if(now-lastPaint>8){
+    paintAt(p.x,p.y);
+    lastPaint=now;
+  }
+});
+
+for(let ev of ['pointerup','pointercancel','lostpointercapture'])
+  canvas.addEventListener(ev,()=>drawing=false);
+
+root.querySelectorAll('.material').forEach(b=>{
+  b.addEventListener('click',()=>{
+    kind=b.dataset.kind;
+
+    root.querySelectorAll('.material').forEach(x=>
+      x.classList.toggle('active',x===b)
+    );
+
+    $('brushLabel').textContent=b.textContent.trim();
+
+    $('toast').textContent=kind==='heat'
+      ?'Нагревай или охлаждай объекты выбранной температурой.'
+      :kind==='fire'
+      ?'Огонь медленно испаряет воду и может поджечь дерево.'
+      :'Рисуй на поле пальцем или мышью.';
+  });
+});
+
+$('pause').onclick=()=>{
+  paused=!paused;
+  $('pause').textContent=paused?'▶ Старт':'Ⅱ Пауза';
+  $('status').textContent=paused
+    ?'Ⅱ Симуляция на паузе'
+    :'● Симуляция работает';
+};
+
+$('step').onclick=()=>{
+  if(paused){
+    update();
+    draw();
+  }
+  else{
+    $('toast').textContent='Сначала поставь симуляцию на паузу.';
+  }
+};
+
+$('clear').onclick=()=>{
+  grid.fill(0);
+  heat.fill(0);
+  $('toast').textContent='Поле очищено.';
+};
+
+$('reset').onclick=()=>{
+  grid.fill(0);
+  heat.fill(0);
+  paused=false;
+  $('pause').textContent='Ⅱ Пауза';
+  $('status').textContent='● Симуляция работает';
+  $('toast').textContent='Новый чистый мир готов.';
+};
+
+$('demo').onclick=()=>{
+  grid.fill(0);
+  heat.fill(0);
+
+  let y=gh-15;
+
+  for(let x=5;x<gw-5;x++){
+    set(x,y,C.wall);
+
+    if(x<gw*.43||x>gw*.7)
+      set(x,y-1,C.wall);
+  }
+
+  for(let y2=gh-24;y2<gh-16;y2++)
+    for(let x=gw*.48|0;x<gw*.63;x++)
+      if(rand()<.8)set(x,y2,C.wood);
+
+  for(let y2=gh-22;y2<gh-17;y2++)
+    for(let x=gw*.54|0;x<gw*.59;x++)
+      set(x,y2,C.fire,145);
+
+  for(let y2=gh-20;y2<gh-17;y2++)
+    for(let x=gw*.18|0;x<gw*.4;x++)
+      set(x,y2,C.water);
+
+  paused=false;
+  $('pause').textContent='Ⅱ Пауза';
+  $('status').textContent='● Симуляция работает';
+  $('toast').textContent='Пример создан: огонь, дерево и вода.';
+};
+
+[
+  ['brush','brushOut',v=>v],
+  ['gravity','gravityOut',v=>v+'%'],
+  ['temp','tempOut',v=>(v>0?'+':'')+v+'°'],
+  ['wind','windOut',v=>v],
+  ['speed','speedOut',v=>v+'×']
+].forEach(([id,out,fmt])=>{
+  $(id).addEventListener('input',()=>{
+    $(out).textContent=fmt($(id).value);
+  });
+});
+
+$('worldtemp').addEventListener('change',()=>{
+  $('toast').textContent='Температура среды изменена.';
+});
+
+let resizeTimer;
+
+new ResizeObserver(()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(resize,100);
+}).observe(canvas);
+
+resize();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
